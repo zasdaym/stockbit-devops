@@ -1,0 +1,24 @@
+build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.7.0
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --cache --context "$CI_PROJECT_DIR" --dockerfile "${CI_PROJECT_DIR}/Dockerfile" --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}" --snapshotMode redo
+
+deploy:
+  stage: deploy
+  image:
+    name: docker:20.10.10
+  script:
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" >> ~/.ssh/config
+    - apk add --no-cache gettext
+    - envsubst < docker-compose.yaml > docker-compose-generated.yaml
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - DOCKER_HOST="$DEPLOY_SERVER" docker stack deploy --with-registry-auth --compose-file docker-compose-generated.yaml hello

@@ -1,0 +1,1 @@
+For the `.gitlab-ci.yml` to work properly an environment variable (secret) named `DEPLOY_SERVER` needs to be configured with values like `ssh://user@server`. Also, for building the container image Kaniko is used instead of plain docker to speed up build time.

@@ -1,0 +1,9 @@
+version: "3.8"
+services:
+  web:
+    image: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    ports:
+      - mode: ingress
+        protocol: tcp
+        published: 80
+        target: 80
